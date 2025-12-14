@@ -26,6 +26,8 @@ interface FormMessages {
 interface FormSettings {
     ignore?: string | null;
     fields?: FormField[] | null;
+    autoValidate: boolean;
+    errorPlacement?: Function | null;
     errorElement?: string | null;
     errorClass?: string | null;
     errorFieldClass?: string | null;

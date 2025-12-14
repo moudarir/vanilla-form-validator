@@ -1,6 +1,6 @@
 /*!
  * @author Simone Miterangelis <simone@mite.it>
- * vanilla-form-validator v2.0.1 by @mitera
+ * vanilla-form-validator v2.0.2 by @mitera
  * https://github.com/mitera/vanilla-form-validator
  * Released under the MIT License.
  */
@@ -9,6 +9,130 @@
 	typeof define === 'function' && define.amd ? define(factory) :
 	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.FormValidator = factory());
 })(this, (function () { 'use strict';
+
+	function deepMerge(obj1, obj2) {
+	    const seen = new WeakMap();
+	    function merge(a, b) {
+	        // Primitives or functions → override
+	        if (b === null || typeof b !== "object") {
+	            return b;
+	        }
+	        if (a === null || typeof a !== "object") {
+	            return clone(b);
+	        }
+	        // Circular reference protection
+	        if (seen.has(b)) {
+	            return seen.get(b);
+	        }
+	        const result = Array.isArray(b) ? [] : {};
+	        seen.set(b, result);
+	        // Merge keys from both objects
+	        const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+	        for (const key of keys) {
+	            const valA = a[key];
+	            const valB = b[key];
+	            if (valB === undefined) {
+	                result[key] = clone(valA);
+	            }
+	            else {
+	                result[key] = merge(valA, valB);
+	            }
+	        }
+	        return result;
+	    }
+	    function clone(value) {
+	        if (value === null || typeof value !== "object")
+	            return value;
+	        if (value instanceof Date)
+	            return new Date(value);
+	        if (value instanceof Map)
+	            return new Map(value);
+	        if (value instanceof Set)
+	            return new Set(value);
+	        if (typeof value === "function")
+	            return value;
+	        if (Array.isArray(value))
+	            return value.map(clone);
+	        const obj = {};
+	        for (const k in value) {
+	            obj[k] = clone(value[k]);
+	        }
+	        return obj;
+	    }
+	    return merge(obj1, obj2);
+	}
+
+	/**
+	 * Validates if the given text is not empty.
+	 */
+	function notEmpty(value) {
+	    return value.length > 0;
+	}
+	/**
+	 * Validate the given regular expression against the specified value.
+	 */
+	function validRegExp(pattern, value) {
+	    return (new RegExp(pattern)).test(value);
+	}
+	/**
+	 * Validate email address.
+	 */
+	function validEmail(value) {
+	    return /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(value);
+	}
+	/**
+	 * Validate url address.
+	 */
+	function validUrl(value) {
+	    return /^(?:https?|ftp):\/\/(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4])|(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*\.[a-z\u00a1-\uffff]{2,}\.?)(?::\d{2,5})?(?:[\/?#]\S*)?$/i.test(value);
+	}
+	/**
+	 * Checks if a given input contains only numeric digits.
+	 *
+	 * @param {string} value - The string to be validated.
+	 * @return {boolean} Returns true if the input contains only numeric digits, otherwise false.
+	 */
+	function validDigits(value) {
+	    return /^\d+$/.test(value);
+	}
+	/**
+	 * Validates the phone number.
+	 */
+	function validPhone(value) {
+	    return /^\s{0,2}[\+]?[\s0-9]{6,20}\s{0,2}$/.test(value);
+	}
+	/**
+	 * Validates the date input provided in the HTMLInputElement field.
+	 *
+	 * @param {HTMLInputElement} field - The input field to validate for a date format.
+	 * @return {boolean} Returns true if the input field contains a valid date format that falls within any specified min/max attributes, otherwise false.
+	 */
+	function validDate(field) {
+	    const fieldValue = field.value;
+	    let value = Date.parse(fieldValue);
+	    if (value) {
+	        if (field.hasAttribute('min')) {
+	            let attrMin = field.getAttribute('min');
+	            if (attrMin && attrMin != '') {
+	                let minValue = Date.parse(attrMin);
+	                if (value < minValue) {
+	                    return false;
+	                }
+	            }
+	        }
+	        if (field.hasAttribute('max')) {
+	            let attrMax = field.getAttribute('max');
+	            if (attrMax && attrMax != '') {
+	                let maxValue = Date.parse(attrMax);
+	                if (value > maxValue) {
+	                    return false;
+	                }
+	            }
+	        }
+	        return true;
+	    }
+	    return false;
+	}
 
 	class FormValidator {
 	    /**
@@ -44,18 +168,19 @@
 	            this.form = selector;
 	        }
 	        if (this.form) {
-	            let default_settings = {
+	            this.settings = deepMerge({
 	                ignore: null,
 	                fields: null,
+	                autoValidate: true,
+	                errorPlacement: null,
 	                errorElement: 'p',
 	                errorClass: 'error',
 	                errorFieldClass: null,
 	                validFormClass: 'was-validated',
 	                submitHandler: null,
 	                messages: this.messages
-	            };
-	            this.settings = Object.assign(Object.assign({}, default_settings), settings);
-	            this.messages = this.merge(this.settings.messages, this.messages);
+	            }, settings);
+	            this.messages = deepMerge(this.settings.messages, this.messages);
 	            this.init();
 	        }
 	    }
@@ -71,7 +196,7 @@
 	            .then(response => response.json())
 	            .then(data => {
 	            if (this.settings && data.messages) {
-	                this.messages = this.merge(data.messages, this.messages);
+	                this.messages = deepMerge(data.messages, this.messages);
 	            }
 	        })
 	            .catch(error => console.log(error));
@@ -88,7 +213,7 @@
 	            this.checkSubmit();
 	            this.fields = Array.from(this.form.querySelectorAll('input[name], textarea, select'));
 	            if (this.settings && this.settings.ignore) {
-	                let ignoreFields = Array.from(this.form.querySelectorAll(this.settings.ignore));
+	                const ignoreFields = Array.from(this.form.querySelectorAll(this.settings.ignore));
 	                this.fields = this.fields.filter(element => !ignoreFields.includes(element));
 	            }
 	            this.fields.forEach(field => {
@@ -102,29 +227,13 @@
 	        }
 	    }
 	    /**
-	     * Merge two objects
-	     *
-	     * @param {FormMessages} o1 Object 1
-	     * @param {FormMessages} o2 Object 2
-	     * @return {FormMessages}
-	     */
-	    merge(o1, o2) {
-	        if (o1 != null) {
-	            for (var i in o1) {
-	                o2[i] = o1[i];
-	            }
-	        }
-	        return o2;
-	    }
-	    /**
 	     * Handles the field validation event triggered by a user action.
 	     *
 	     * @param {Event} e - The event object representing the user action.
 	     * @return {void}
 	     */
 	    fieldValidationEvent(e) {
-	        const field = e.target;
-	        this.validateField(field);
+	        this.validateField(e.target);
 	    }
 	    /**
 	     * Validates a field based on its type and any additional rules provided.
@@ -157,7 +266,7 @@
 	                    isValid = this.validateCheckboxRadio(fieldName);
 	                    break;
 	                default:
-	                    isValid = this.validateText(fieldValue);
+	                    isValid = notEmpty(fieldValue);
 	            }
 	            if (!isValid && !customErrorMessage) {
 	                errorMessage = this.messages.required;
@@ -166,19 +275,19 @@
 	        if (isValid && fieldValue && fieldValue !== '') {
 	            switch (fieldType) {
 	                case 'email':
-	                    isValid = this.validateEmail(fieldValue);
+	                    isValid = validEmail(fieldValue);
 	                    if (!isValid && !customErrorMessage) {
 	                        errorMessage = this.messages.email;
 	                    }
 	                    break;
 	                case 'tel':
-	                    isValid = this.validatePhone(fieldValue);
+	                    isValid = validPhone(fieldValue);
 	                    if (!isValid && !customErrorMessage) {
 	                        errorMessage = this.messages.phone;
 	                    }
 	                    break;
 	                case 'url':
-	                    isValid = this.validateUrl(fieldValue);
+	                    isValid = validUrl(fieldValue);
 	                    if (!isValid && !customErrorMessage) {
 	                        errorMessage = this.messages.url;
 	                    }
@@ -190,20 +299,20 @@
 	                //     }
 	                //     break;
 	                case 'file':
-	                    isValid = (field.files && field.files.length > 0) ? true : false;
+	                    isValid = !!(field.files && field.files.length > 0);
 	                    if (!isValid && !customErrorMessage) {
 	                        errorMessage = this.messages.file;
 	                    }
 	                    break;
 	                case 'date':
-	                    isValid = this.validateDate(field);
+	                    isValid = validDate(field);
 	                    if (!isValid && !customErrorMessage) {
 	                        errorMessage = this.messages.date;
 	                    }
 	                    break;
 	                default:
 	                    let minlength = field.getAttribute('minlength') ? field.getAttribute('minlength') : field.getAttribute('min');
-	                    if (minlength && this.validateDigits(minlength)) {
+	                    if (minlength && validDigits(minlength)) {
 	                        isValid = this.minlength(fieldValue, field, parseInt(minlength));
 	                        if (!isValid && !customErrorMessage) {
 	                            if (field.getAttribute('min'))
@@ -213,7 +322,7 @@
 	                        }
 	                    }
 	                    let maxlength = field.getAttribute('maxlength') ? field.getAttribute('maxlength') : field.getAttribute('max');
-	                    if (maxlength && this.validateDigits(maxlength)) {
+	                    if (maxlength && validDigits(maxlength)) {
 	                        isValid = this.maxlength(fieldValue, field, parseInt(maxlength));
 	                        if (!isValid && !customErrorMessage) {
 	                            if (field.getAttribute('max'))
@@ -222,7 +331,7 @@
 	                                errorMessage = this.messages.maxlength.replace('{0}', maxlength);
 	                        }
 	                    }
-	                    if (minlength && this.validateDigits(minlength) && maxlength && this.validateDigits(maxlength)) {
+	                    if (minlength && validDigits(minlength) && maxlength && validDigits(maxlength)) {
 	                        isValid = this.rangelength(fieldValue, field, [parseInt(minlength), parseInt(maxlength)]);
 	                        if (!isValid && !customErrorMessage) {
 	                            if (field.getAttribute('max') && field.getAttribute('min'))
@@ -237,7 +346,7 @@
 	                    }
 	            }
 	            if (isValid && fieldValue && fieldValue !== '' && pattern !== '') {
-	                isValid = this.validateRegExp(pattern, fieldValue);
+	                isValid = validRegExp(pattern, fieldValue);
 	                if (!isValid && !customErrorMessage) {
 	                    errorMessage = this.messages.regExp;
 	                }
@@ -327,7 +436,12 @@
 	            const errorHelpItem = document.createElement(this.settings.errorElement ? this.settings.errorElement : 'p');
 	            errorHelpItem.className = this.settings.errorClass ? this.settings.errorClass : 'error';
 	            errorHelpItem.id = errorHelpId;
-	            field.insertAdjacentElement('afterend', errorHelpItem);
+	            if (typeof this.settings.errorPlacement === 'function') {
+	                this.settings.errorPlacement(field, errorHelpItem);
+	            }
+	            else {
+	                field.insertAdjacentElement('afterend', errorHelpItem);
+	            }
 	            errorHelp = document.querySelector('#' + errorHelpId);
 	        }
 	        if (errorHelp) {
@@ -355,7 +469,7 @@
 	     * Escapes characters with special meaning in CSS for a given string
 	     *
 	     * @param {string} string - The input string to escape CSS special characters
-	     * @return {string} - The escaped string with CSS special characters properly escaped
+	     * @return {string|undefined} - The escaped string with CSS special characters properly escaped
 	     */
 	    escapeCssMeta(string) {
 	        if (string === undefined) {
@@ -423,7 +537,7 @@
 	     * @return {boolean} Returns true if the length of the input value is greater than or equal to the specified minimum length, false otherwise.
 	     */
 	    minlength(value, element, param) {
-	        var length = Array.isArray(value) ? value.length : this.getLength(value, element);
+	        const length = Array.isArray(value) ? value.length : this.getLength(value, element);
 	        return length >= param;
 	    }
 	    /**
@@ -436,7 +550,7 @@
 	     * @return {boolean} Returns true if the length of the value is less than or equal to the param, otherwise false.
 	     */
 	    maxlength(value, element, param) {
-	        var length = Array.isArray(value) ? value.length : this.getLength(value, element);
+	        const length = Array.isArray(value) ? value.length : this.getLength(value, element);
 	        return length <= param;
 	    }
 	    /**
@@ -449,7 +563,7 @@
 	     * @return {boolean} Returns true if the length of the value falls within the specified range, otherwise returns false.
 	     */
 	    rangelength(value, element, param) {
-	        var length = Array.isArray(value) ? value.length : this.getLength(value, element);
+	        const length = Array.isArray(value) ? value.length : this.getLength(value, element);
 	        return (length >= param[0] && length <= param[1]);
 	    }
 	    /**
@@ -461,8 +575,7 @@
 	        let isValid = true;
 	        if (this.fields) {
 	            this.fields.forEach(field => {
-	                const el = field;
-	                let isValidField = this.validateField(el);
+	                let isValidField = this.validateField(field);
 	                if (!isValidField) {
 	                    isValid = false;
 	                }
@@ -478,7 +591,7 @@
 	     */
 	    validateCheckboxRadio(name) {
 	        let element = Array.from((this.form) ? this.form.querySelectorAll('input[name="' + name + '"]') : []);
-	        for (var i = 0; i < element.length; i++) {
+	        for (let i = 0; i < element.length; i++) {
 	            let checked = element[i].checked;
 	            if (checked) {
 	                element.forEach((item) => {
@@ -490,109 +603,6 @@
 	            }
 	        }
 	        return false;
-	    }
-	    /**
-	     * Validates if the given text is not empty.
-	     *
-	     * @param {string} value - The text to be validated.
-	     * @return {boolean} - True if the text is not empty, false otherwise.
-	     */
-	    validateText(value) {
-	        return value.length > 0;
-	    }
-	    /**
-	     * Validate the given regular expression against the specified value.
-	     *
-	     * @param {string} regExp - The regular expression to validate against.
-	     * @param {string} value - The value to validate.
-	     *
-	     * @returns {boolean} - True if the value matches the regular expression, false otherwise.
-	     */
-	    validateRegExp(regExp, value) {
-	        let customRegExp = new RegExp(regExp);
-	        return customRegExp.test(value);
-	    }
-	    /**
-	     * Validates email address.
-	     *
-	     * @param {string} value - The email address to be validated.
-	     * @return {boolean} - Returns true if the email address is valid, otherwise false.
-	     */
-	    validateEmail(value) {
-	        const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-	        return emailRegex.test(value);
-	    }
-	    /**
-	     * Validates the phone number.
-	     *
-	     * @param {string} value - The phone number to be validated.
-	     * @return {boolean} - True if the phone number is valid, false otherwise.
-	     */
-	    validatePhone(value) {
-	        const emailRegex = /^[\s]{0,2}[\+]{0,1}[\s0-9]{6,20}[\s]{0,2}$/;
-	        return emailRegex.test(value);
-	    }
-	    /**
-	     * Validates a URL using a regular expression.
-	     *
-	     * @param {string} value The URL string to be validated.
-	     * @return {boolean} true if the input value is a valid URL, false otherwise.
-	     */
-	    validateUrl(value) {
-	        const urlRegex = /^(?:(?:(?:https?|ftp):)?\/\/)(?:(?:[^\]\[?\/<~#`!@$^&*()+=}|:";',>{ ]|%[0-9A-Fa-f]{2})+(?::(?:[^\]\[?\/<~#`!@$^&*()+=}|:";',>{ ]|%[0-9A-Fa-f]{2})*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$/;
-	        return urlRegex.test(value);
-	    }
-	    /**
-	     * Validates the date input provided in the HTMLInputElement field.
-	     *
-	     * @param {HTMLInputElement} field - The input field to validate for a date format.
-	     * @return {boolean} Returns true if the input field contains a valid date format that falls within any specified min/max attributes, otherwise false.
-	     */
-	    validateDate(field) {
-	        const fieldValue = field.value;
-	        let value = Date.parse(fieldValue);
-	        if (value) {
-	            if (field.hasAttribute('min')) {
-	                let attrMin = field.getAttribute('min');
-	                if (attrMin && attrMin != '') {
-	                    let minValue = Date.parse(attrMin);
-	                    if (value < minValue) {
-	                        return false;
-	                    }
-	                }
-	            }
-	            if (field.hasAttribute('max')) {
-	                let attrMax = field.getAttribute('max');
-	                if (attrMax && attrMax != '') {
-	                    let maxValue = Date.parse(attrMax);
-	                    if (value > maxValue) {
-	                        return false;
-	                    }
-	                }
-	            }
-	            return true;
-	        }
-	        return false;
-	    }
-	    /**
-	     * Validates if the given value is a valid number.
-	     *
-	     * @param {string} value - The value to be validated as a number.
-	     * @return {boolean} Returns true if the value is a valid number, otherwise false.
-	     */
-	    validateNumber(value) {
-	        const numberRegex = /^(?:-?\d+|-?\d{1,3}(?:,\d{3})+)?(?:\.\d+)?$/;
-	        return numberRegex.test(value);
-	    }
-	    /**
-	     * Checks if a given input contains only numeric digits.
-	     *
-	     * @param {string} input - The string to be validated.
-	     * @return {boolean} Returns true if the input contains only numeric digits, otherwise false.
-	     */
-	    validateDigits(value) {
-	        const numberRegex = /^\d+$/;
-	        return numberRegex.test(value);
 	    }
 	    /**
 	     * Attaches a submit event listener to the form element and prevents the default form submission behavior.
@@ -610,7 +620,7 @@
 	    /**
 	     * Submit the form action.
 	     *
-	     * @param {object} $this - The reference to the current object.
+	     * //@param {object} $this - The reference to the current object.
 	     * @return {void}
 	     */
 	    submitAction() {

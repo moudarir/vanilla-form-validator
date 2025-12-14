@@ -1,4 +1,6 @@
 import {FormMessages, FormSettings} from "./types";
+import {deepMerge} from "./utils";
+import {notEmpty, validDate, validDigits, validEmail, validPhone, validRegExp, validUrl} from "./isHelper";
 
 export default class FormValidator {
 
@@ -38,21 +40,19 @@ export default class FormValidator {
             this.form = selector;
         }
         if (this.form) {
-
-            let default_settings: FormSettings = {
+            this.settings = deepMerge({
                 ignore: null,
                 fields: null,
+                autoValidate: true,
+                errorPlacement: null,
                 errorElement: 'p',
                 errorClass: 'error',
                 errorFieldClass: null,
                 validFormClass: 'was-validated',
                 submitHandler: null,
                 messages: this.messages
-            }
-
-            this.settings = {...default_settings, ...settings} as FormSettings;
-
-            this.messages = this.merge(this.settings.messages, this.messages);
+            }, settings as Object) as FormSettings;
+            this.messages = deepMerge(this.settings.messages as Object, this.messages) as FormMessages;
 
             this.init();
         }
@@ -65,12 +65,12 @@ export default class FormValidator {
      *
      * @return {void}
      */
-    loadMessages(jsonFile: string) {
+    loadMessages(jsonFile: string): void {
         fetch(jsonFile)
             .then(response => response.json())
             .then(data => {
                 if (this.settings && data.messages) {
-                    this.messages = this.merge(data.messages, this.messages);
+                    this.messages = deepMerge(data.messages, this.messages);
                 }
             })
             .catch(error => console.log(error));
@@ -82,7 +82,7 @@ export default class FormValidator {
      *
      * @return {void}
      */
-    private init() {
+    private init(): void {
         if (this.form) {
             this.form.setAttribute('novalidate', '');
 
@@ -90,7 +90,7 @@ export default class FormValidator {
 
             this.fields = Array.from(this.form.querySelectorAll('input[name], textarea, select'));
             if (this.settings && this.settings.ignore) {
-                let ignoreFields = Array.from(this.form.querySelectorAll(this.settings.ignore));
+                const ignoreFields = Array.from(this.form.querySelectorAll(this.settings.ignore));
                 this.fields = this.fields.filter(element => !ignoreFields.includes(element));
             }
             this.fields.forEach(field => {
@@ -106,30 +106,13 @@ export default class FormValidator {
     }
 
     /**
-     * Merge two objects
-     *
-     * @param {FormMessages} o1 Object 1
-     * @param {FormMessages} o2 Object 2
-     * @return {FormMessages}
-     */
-    merge(o1: any, o2: any) {
-        if (o1 != null) {
-            for (var i in o1) {
-                o2[i] = o1[i];
-            }
-        }
-        return o2;
-    }
-
-    /**
      * Handles the field validation event triggered by a user action.
      *
      * @param {Event} e - The event object representing the user action.
      * @return {void}
      */
-    fieldValidationEvent(e: Event) {
-        const field = e.target as HTMLInputElement;
-        this.validateField(field);
+    fieldValidationEvent(e: Event): void {
+        this.validateField(e.target as HTMLInputElement);
     }
 
     /**
@@ -138,7 +121,7 @@ export default class FormValidator {
      * @param {HTMLInputElement} field - The input field to be validated.
      * @return {boolean} Returns true if the field is valid, false if it is not.
      */
-    validateField(field: HTMLInputElement) {
+    validateField(field: HTMLInputElement): boolean {
         let fieldId = field.id;
         const fieldName = field.name;
         const fieldType = field.type;
@@ -163,7 +146,7 @@ export default class FormValidator {
                     isValid = this.validateCheckboxRadio(fieldName);
                     break;
                 default:
-                    isValid = this.validateText(fieldValue);
+                    isValid = notEmpty(fieldValue);
             }
             if (!isValid && !customErrorMessage) {
                 errorMessage = this.messages.required;
@@ -172,19 +155,19 @@ export default class FormValidator {
         if (isValid && fieldValue && fieldValue !== '') {
             switch (fieldType) {
                 case 'email':
-                    isValid = this.validateEmail(fieldValue);
+                    isValid = validEmail(fieldValue);
                     if (!isValid && !customErrorMessage) {
                         errorMessage = this.messages.email;
                     }
                     break;
                 case 'tel':
-                    isValid = this.validatePhone(fieldValue);
+                    isValid = validPhone(fieldValue);
                     if (!isValid && !customErrorMessage) {
                         errorMessage = this.messages.phone;
                     }
                     break;
                 case 'url':
-                    isValid = this.validateUrl(fieldValue);
+                    isValid = validUrl(fieldValue);
                     if (!isValid && !customErrorMessage) {
                         errorMessage = this.messages.url;
                     }
@@ -196,20 +179,20 @@ export default class FormValidator {
                 //     }
                 //     break;
                 case 'file':
-                    isValid = (field.files && field.files.length > 0) ? true : false;
+                    isValid = !!(field.files && field.files.length > 0);
                     if (!isValid && !customErrorMessage) {
                         errorMessage = this.messages.file;
                     }
                     break;
                 case 'date':
-                    isValid = this.validateDate(field);
+                    isValid = validDate(field);
                     if (!isValid && !customErrorMessage) {
                         errorMessage = this.messages.date;
                     }
                     break;
                 default:
                     let minlength = field.getAttribute('minlength') ? field.getAttribute('minlength') : field.getAttribute('min');
-                    if (minlength && this.validateDigits(minlength)) {
+                    if (minlength && validDigits(minlength)) {
                         isValid = this.minlength(fieldValue, field, parseInt(minlength));
                         if (!isValid && !customErrorMessage) {
                             if (field.getAttribute('min'))
@@ -219,7 +202,7 @@ export default class FormValidator {
                         }
                     }
                     let maxlength = field.getAttribute('maxlength') ? field.getAttribute('maxlength') : field.getAttribute('max');
-                    if (maxlength && this.validateDigits(maxlength)) {
+                    if (maxlength && validDigits(maxlength)) {
                         isValid = this.maxlength(fieldValue, field, parseInt(maxlength));
                         if (!isValid && !customErrorMessage) {
                             if (field.getAttribute('max'))
@@ -228,7 +211,7 @@ export default class FormValidator {
                                 errorMessage = this.messages.maxlength.replace('{0}', maxlength);
                         }
                     }
-                    if (minlength && this.validateDigits(minlength) && maxlength && this.validateDigits(maxlength)) {
+                    if (minlength && validDigits(minlength) && maxlength && validDigits(maxlength)) {
                         isValid = this.rangelength(fieldValue, field, [parseInt(minlength), parseInt(maxlength)]);
                         if (!isValid && !customErrorMessage) {
                             if (field.getAttribute('max') && field.getAttribute('min'))
@@ -243,7 +226,7 @@ export default class FormValidator {
                     }
             }
             if (isValid && fieldValue && fieldValue !== '' && pattern !== '') {
-                isValid = this.validateRegExp(pattern, fieldValue);
+                isValid = validRegExp(pattern, fieldValue);
                 if (!isValid && !customErrorMessage) {
                     errorMessage = this.messages.regExp;
                 }
@@ -328,7 +311,13 @@ export default class FormValidator {
             const errorHelpItem = document.createElement(this.settings.errorElement ? this.settings.errorElement : 'p');
             errorHelpItem.className = this.settings.errorClass ? this.settings.errorClass : 'error';
             errorHelpItem.id = errorHelpId;
-            field.insertAdjacentElement('afterend', errorHelpItem);
+
+            if (typeof this.settings.errorPlacement === 'function') {
+                this.settings.errorPlacement(field, errorHelpItem);
+            } else {
+                field.insertAdjacentElement('afterend', errorHelpItem);
+            }
+
             errorHelp = <HTMLElement>document.querySelector('#' + errorHelpId);
         }
         if (errorHelp) {
@@ -357,9 +346,9 @@ export default class FormValidator {
      * Escapes characters with special meaning in CSS for a given string
      *
      * @param {string} string - The input string to escape CSS special characters
-     * @return {string} - The escaped string with CSS special characters properly escaped
+     * @return {string|undefined} - The escaped string with CSS special characters properly escaped
      */
-    escapeCssMeta (string: string) {
+    escapeCssMeta (string: string): string | undefined {
         if ( string === undefined ) {
             return "";
         }
@@ -372,7 +361,7 @@ export default class FormValidator {
      * @param {string} name - The name attribute value to search for.
      * @return {Array<Element>} - An array of elements matching the given name attribute.
      */
-    findByName(name: string) {
+    findByName(name: string): Array<Element> {
         return Array.from((this.form) ? this.form.querySelectorAll( "[name='" + this.escapeCssMeta(name) + "']" ) : []);
     }
 
@@ -382,7 +371,7 @@ export default class FormValidator {
      * @param {HTMLInputElement} element - The HTML input element to be checked.
      * @return {boolean} - True if the element is a radio button or checkbox, false otherwise.
      */
-    checkable(element: HTMLInputElement) {
+    checkable(element: HTMLInputElement): boolean {
         return (/radio|checkbox/i).test( element.type );
     }
 
@@ -394,7 +383,7 @@ export default class FormValidator {
      *
      * @return {number} The length of the value based on the type of the input element.
      */
-    getLength(value: string, element: HTMLInputElement) {
+    getLength(value: string, element: HTMLInputElement): number {
         switch ( element.nodeName.toLowerCase() ) {
             case "select":
                 return Array.from(element.querySelectorAll('option')).filter(element => (<HTMLOptionElement>element).selected).length;
@@ -426,8 +415,8 @@ export default class FormValidator {
      *
      * @return {boolean} Returns true if the length of the input value is greater than or equal to the specified minimum length, false otherwise.
      */
-    minlength(value: string, element: HTMLInputElement, param: number) {
-        var length = Array.isArray( value ) ? value.length : this.getLength( value, element );
+    minlength(value: string, element: HTMLInputElement, param: number): boolean {
+        const length = Array.isArray(value) ? value.length : this.getLength(value, element);
         return length >= param;
     }
 
@@ -440,8 +429,8 @@ export default class FormValidator {
      *
      * @return {boolean} Returns true if the length of the value is less than or equal to the param, otherwise false.
      */
-    maxlength(value: string, element: HTMLInputElement, param: number) {
-        var length = Array.isArray( value ) ? value.length : this.getLength( value, element );
+    maxlength(value: string, element: HTMLInputElement, param: number): boolean {
+        const length = Array.isArray(value) ? value.length : this.getLength(value, element);
         return length <= param;
     }
 
@@ -454,8 +443,8 @@ export default class FormValidator {
      *
      * @return {boolean} Returns true if the length of the value falls within the specified range, otherwise returns false.
      */
-    rangelength(value: string, element: HTMLInputElement, param: number[]) {
-        var length = Array.isArray( value ) ? value.length : this.getLength( value, element );
+    rangelength(value: string, element: HTMLInputElement, param: number[]): boolean {
+        const length = Array.isArray(value) ? value.length : this.getLength(value, element);
         return ( length >= param[0] && length <= param[1] );
     }
 
@@ -464,12 +453,11 @@ export default class FormValidator {
      *
      * @return {boolean} True if all form fields are valid, otherwise false.
      */
-    validateForm() {
+    validateForm(): boolean {
         let isValid = true;
         if (this.fields) {
             this.fields.forEach(field => {
-                const el = field;
-                let isValidField = this.validateField(<HTMLInputElement>el);
+                let isValidField = this.validateField(<HTMLInputElement>field);
                 if (!isValidField) {
                     isValid = false;
                 }
@@ -484,9 +472,9 @@ export default class FormValidator {
      * @param {string} name - The name of the radio buttons or checkboxes to validate.
      * @return {boolean} - Returns true if at least one radio button or checkbox with the specified name is checked, false otherwise.
      */
-    validateCheckboxRadio(name: string) {
+    validateCheckboxRadio(name: string): boolean {
         let element = <HTMLInputElement[]>Array.from((this.form) ? this.form.querySelectorAll('input[name="' + name + '"]') : []);
-        for (var i = 0; i < element.length; i++) {
+        for (let i = 0; i < element.length; i++) {
             let checked = element[i].checked;
             if (checked) {
                 element.forEach((item) => {
@@ -501,122 +489,11 @@ export default class FormValidator {
     }
 
     /**
-     * Validates if the given text is not empty.
-     *
-     * @param {string} value - The text to be validated.
-     * @return {boolean} - True if the text is not empty, false otherwise.
-     */
-    validateText(value: string) {
-        return value.length > 0;
-    }
-
-    /**
-     * Validate the given regular expression against the specified value.
-     *
-     * @param {string} regExp - The regular expression to validate against.
-     * @param {string} value - The value to validate.
-     *
-     * @returns {boolean} - True if the value matches the regular expression, false otherwise.
-     */
-    validateRegExp(regExp: string, value: string) {
-        let customRegExp = new RegExp(regExp);
-        return customRegExp.test(value);
-    }
-
-    /**
-     * Validates email address.
-     *
-     * @param {string} value - The email address to be validated.
-     * @return {boolean} - Returns true if the email address is valid, otherwise false.
-     */
-    validateEmail(value: string) {
-        const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-        return emailRegex.test(value);
-    }
-
-    /**
-     * Validates the phone number.
-     *
-     * @param {string} value - The phone number to be validated.
-     * @return {boolean} - True if the phone number is valid, false otherwise.
-     */
-    validatePhone(value: string) {
-        const emailRegex = /^[\s]{0,2}[\+]{0,1}[\s0-9]{6,20}[\s]{0,2}$/;
-        return emailRegex.test(value);
-    }
-
-    /**
-     * Validates a URL using a regular expression.
-     *
-     * @param {string} value The URL string to be validated.
-     * @return {boolean} true if the input value is a valid URL, false otherwise.
-     */
-    validateUrl(value: string) {
-        const urlRegex = /^(?:(?:(?:https?|ftp):)?\/\/)(?:(?:[^\]\[?\/<~#`!@$^&*()+=}|:";',>{ ]|%[0-9A-Fa-f]{2})+(?::(?:[^\]\[?\/<~#`!@$^&*()+=}|:";',>{ ]|%[0-9A-Fa-f]{2})*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$/;
-        return urlRegex.test(value);
-    }
-
-    /**
-     * Validates the date input provided in the HTMLInputElement field.
-     *
-     * @param {HTMLInputElement} field - The input field to validate for a date format.
-     * @return {boolean} Returns true if the input field contains a valid date format that falls within any specified min/max attributes, otherwise false.
-     */
-    validateDate(field: HTMLInputElement) {
-        const fieldValue = field.value;
-        let value = Date.parse(fieldValue);
-        if (value) {
-            if (field.hasAttribute('min')) {
-                let attrMin = field.getAttribute('min');
-                if (attrMin && attrMin != '') {
-                    let minValue = Date.parse(attrMin);
-                    if (value < minValue) {
-                        return false;
-                    }
-                }
-            }
-            if (field.hasAttribute('max')) {
-                let attrMax = field.getAttribute('max');
-                if (attrMax && attrMax != '') {
-                    let maxValue = Date.parse(attrMax);
-                    if (value > maxValue) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Validates if the given value is a valid number.
-     *
-     * @param {string} value - The value to be validated as a number.
-     * @return {boolean} Returns true if the value is a valid number, otherwise false.
-     */
-    validateNumber(value: string) {
-        const numberRegex = /^(?:-?\d+|-?\d{1,3}(?:,\d{3})+)?(?:\.\d+)?$/;
-        return numberRegex.test(value);
-    }
-
-    /**
-     * Checks if a given input contains only numeric digits.
-     *
-     * @param {string} input - The string to be validated.
-     * @return {boolean} Returns true if the input contains only numeric digits, otherwise false.
-     */
-    validateDigits(value: string) {
-        const numberRegex = /^\d+$/;
-        return numberRegex.test(value);
-    }
-
-    /**
      * Attaches a submit event listener to the form element and prevents the default form submission behavior.
      *
      * @return {void}
      */
-    checkSubmit() {
+    checkSubmit(): void {
         if (this.form) {
             this.form.addEventListener('submit', (event) => {
                 event.preventDefault();
@@ -628,10 +505,10 @@ export default class FormValidator {
     /**
      * Submit the form action.
      *
-     * @param {object} $this - The reference to the current object.
+     * //@param {object} $this - The reference to the current object.
      * @return {void}
      */
-    submitAction() {
+    submitAction(): void {
         if (this.form) {
             if (this.settings && this.settings.validFormClass) {
                 this.form.classList.add(this.settings.validFormClass)
@@ -656,7 +533,7 @@ export default class FormValidator {
      *
      * @return {void}
      */
-    resetForm() {
+    resetForm(): void {
         if (this.form) {
             if (this.settings && this.settings.validFormClass) {
                 this.form.classList.remove(this.settings.validFormClass);

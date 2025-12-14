@@ -28,14 +28,6 @@ export default class FormValidator {
      */
     private init;
     /**
-     * Merge two objects
-     *
-     * @param {FormMessages} o1 Object 1
-     * @param {FormMessages} o2 Object 2
-     * @return {FormMessages}
-     */
-    merge(o1: any, o2: any): any;
-    /**
      * Handles the field validation event triggered by a user action.
      *
      * @param {Event} e - The event object representing the user action.
@@ -53,16 +45,16 @@ export default class FormValidator {
      * Escapes characters with special meaning in CSS for a given string
      *
      * @param {string} string - The input string to escape CSS special characters
-     * @return {string} - The escaped string with CSS special characters properly escaped
+     * @return {string|undefined} - The escaped string with CSS special characters properly escaped
      */
-    escapeCssMeta(string: string): string;
+    escapeCssMeta(string: string): string | undefined;
     /**
      * Find all elements in the DOM with the specified name attribute.
      *
      * @param {string} name - The name attribute value to search for.
      * @return {Array<Element>} - An array of elements matching the given name attribute.
      */
-    findByName(name: string): Element[];
+    findByName(name: string): Array<Element>;
     /**
      * Check if the given HTML input element is a radio button or checkbox.
      *
@@ -123,64 +115,6 @@ export default class FormValidator {
      */
     validateCheckboxRadio(name: string): boolean;
     /**
-     * Validates if the given text is not empty.
-     *
-     * @param {string} value - The text to be validated.
-     * @return {boolean} - True if the text is not empty, false otherwise.
-     */
-    validateText(value: string): boolean;
-    /**
-     * Validate the given regular expression against the specified value.
-     *
-     * @param {string} regExp - The regular expression to validate against.
-     * @param {string} value - The value to validate.
-     *
-     * @returns {boolean} - True if the value matches the regular expression, false otherwise.
-     */
-    validateRegExp(regExp: string, value: string): boolean;
-    /**
-     * Validates email address.
-     *
-     * @param {string} value - The email address to be validated.
-     * @return {boolean} - Returns true if the email address is valid, otherwise false.
-     */
-    validateEmail(value: string): boolean;
-    /**
-     * Validates the phone number.
-     *
-     * @param {string} value - The phone number to be validated.
-     * @return {boolean} - True if the phone number is valid, false otherwise.
-     */
-    validatePhone(value: string): boolean;
-    /**
-     * Validates a URL using a regular expression.
-     *
-     * @param {string} value The URL string to be validated.
-     * @return {boolean} true if the input value is a valid URL, false otherwise.
-     */
-    validateUrl(value: string): boolean;
-    /**
-     * Validates the date input provided in the HTMLInputElement field.
-     *
-     * @param {HTMLInputElement} field - The input field to validate for a date format.
-     * @return {boolean} Returns true if the input field contains a valid date format that falls within any specified min/max attributes, otherwise false.
-     */
-    validateDate(field: HTMLInputElement): boolean;
-    /**
-     * Validates if the given value is a valid number.
-     *
-     * @param {string} value - The value to be validated as a number.
-     * @return {boolean} Returns true if the value is a valid number, otherwise false.
-     */
-    validateNumber(value: string): boolean;
-    /**
-     * Checks if a given input contains only numeric digits.
-     *
-     * @param {string} input - The string to be validated.
-     * @return {boolean} Returns true if the input contains only numeric digits, otherwise false.
-     */
-    validateDigits(value: string): boolean;
-    /**
      * Attaches a submit event listener to the form element and prevents the default form submission behavior.
      *
      * @return {void}
@@ -189,7 +123,7 @@ export default class FormValidator {
     /**
      * Submit the form action.
      *
-     * @param {object} $this - The reference to the current object.
+     * //@param {object} $this - The reference to the current object.
      * @return {void}
      */
     submitAction(): void;

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Vanilla Form Validator - Bootstrap demo</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+        integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+</head>
+<body>
+<div class="container">
+  <div class="mx-auto mt-5" style="width:800px;">
+    <div class="text-center">
+      <h1>Vanilla Form Validator - Bootstrap Demo</h1>
+      <p class="lead">Default submitHandler is set to display an alert into of submitting the form</p>
+    </div>
+    <form action="#" method="post" id="commentForm" class="needs-validation" novalidate>
+      <div class="card shadow-sm mb-3">
+        <div class="card-header">
+          <h3 class="mb-0">Simple Demo</h3>
+        </div>
+        <div class="card-body">
+          <p class="text-center">Please provide your name, email address (won't be published) and a comment</p>
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label for="cname">Name <span class="text-danger small">(required, at least 2 characters)</span></label>
+              <input class="form-control" id="cname" name="name" minlength="2" type="text" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="cemail">E-Mail <span class="text-danger small">(required)</span></label>
+              <input class="form-control" id="cemail" type="email" name="email" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="curl">URL <span class="text-info small">(optional)</span></label>
+            <input class="form-control" id="curl" type="url" name="url">
+          </div>
+          <div class="form-group">
+            <label for="ccomment">Your comment <span class="text-danger small">(required)</span></label>
+            <textarea class="form-control" rows="4" id="ccomment" name="comment" required data-error-message="Custom error message"></textarea>
+          </div>
+          <p>
+            <label for="cignore">Ignore hidden</label>
+            <input id="cignore" name="cignore" type="hidden" required>
+          </p>
+          <div class="form-group">
+            <input class="btn btn-lg btn-primary" type="submit" value="Submit">
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <form action="#" method="post" id="signupForm" class="needs-validation" novalidate>
+      <div class="card shadow-sm mb-3">
+        <div class="card-header">
+          <h3 class="mb-0">Validating a complete form</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label for="firstname">Firstname</label>
+              <input class="form-control" id="firstname" name="firstname" type="text" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="lastname">Lastname</label>
+              <input class="form-control" id="lastname" name="lastname" type="text" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label for="username">Username</label>
+              <input class="form-control" id="username" name="username" type="text" minlength="2" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="email">Email</label>
+              <input class="form-control" id="email" name="email" type="email" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label for="password">Password</label>
+              <input class="form-control" id="password" name="password" type="password" minlength="5" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="confirm_password">Confirm password</label>
+              <input class="form-control" id="confirm_password" name="confirm_password" type="password" minlength="5" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label for="age">Age</label>
+              <input class="form-control" id="age" name="age" type="number" min="18" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="number">RegExp <span class="text-danger small">[0-9]{6,20}</span></label>
+              <input class="form-control" id="number" name="number" type="text" pattern="[0-9]{6,20}" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group col-md-6">
+              <label for="date">Date</label>
+              <input class="form-control" id="date" name="date" type="date" min="2025-01-01" required>
+            </div>
+            <div class="form-group col-md-6">
+              <label>Choose Photo</label>
+              <div class="custom-file">
+                <input type="file" class="custom-file-input" id="customFile" required>
+                <label class="custom-file-label" for="customFile">Choose Photo</label>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group col-md-6">
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="agree" name="agree" required>
+                <label class="custom-control-label" for="agree">Please agree to our policy</label>
+              </div>
+            </div>
+            <div class="form-group col-md-6">
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="newsletter" name="newsletter">
+                <label class="custom-control-label" for="newsletter">I'd like to receive the newsletter</label>
+              </div>
+            </div>
+          </div>
+          <fieldset id="newsletter_topics" disabled>
+            <legend>
+              Topics (select at least two) - note: would be hidden when newsletter isn't selected, but is visible here
+              for the demo
+            </legend>
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input class="custom-control-input" type="checkbox" id="topic_marketflash" name="topic" value="marketflash">
+                <label class="custom-control-label" for="topic_marketflash">Marketflash</label>
+              </div>
+              <div class="custom-control custom-checkbox">
+                <input class="custom-control-input" type="checkbox" id="topic_fuzz" name="topic" value="fuzz">
+                <label class="custom-control-label" for="topic_fuzz">Latest fuzz</label>
+              </div>
+              <div class="custom-control custom-checkbox">
+                <input class="custom-control-input" type="checkbox" id="topic_digester" name="topic" value="digester">
+                <label class="custom-control-label" for="topic_digester">Mailing list digester</label>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset id="newsletter_topics2">
+            <legend>Topics (test rule)</legend>
+            <div class="form-group">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="topic_marketflash2" name="topic2" value="topic1">
+                <label class="form-check-label" for="topic_marketflash2">Topic 1</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="topic_fuzz2" name="topic2" value="topic2">
+                <label class="form-check-label" for="topic_fuzz2">Topic 2</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="topic_digester2" name="topic2" value="topic3">
+                <label class="form-check-label" for="topic_digester2">Topic 3</label>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset id="newsletter3">
+            <div class="form-group">
+              <label for="minselect">Multiple select</label>
+              <select class="custom-select" name="minselect" id="minselect" multiple>
+                <option value="1">option One</option>
+                <option value="2">option Two</option>
+                <option value="3">option Three</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <div class="custom-file">
+                <input type="file" class="custom-file-input" id="maxfiles" multiple>
+                <label class="custom-file-label" for="maxfiles">Choose Photos</label>
+              </div>
+            </div>
+          </fieldset>
+          <div class="form-group">
+            <input class="btn btn-lg btn-primary" type="submit" value="Submit">
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<script type="text/javascript" src="../dist/vanilla-form-validator.min.js"></script>
+<script>
+  let commentForm = new FormValidator("#commentForm", {
+    errorElement: 'div',
+    errorClass: 'invalid-feedback',
+    errorFieldClass: 'is-invalid',
+    ignore: 'input[type="hidden"]'
+  });
+  //commentForm.loadMessages('localization/messages_es.json');
+
+  // validate signup form on keyup and submit
+  let messages = {
+    required: 'Ce champ est obligatoire.' //override default message
+  }
+  let signupForm = new FormValidator(document.getElementById('signupForm'), {
+    errorElement: 'div',
+    errorClass: 'invalid-feedback',
+    errorFieldClass: 'is-invalid',
+    messages: messages,
+    fields: [
+      {
+        name: 'username',
+        rules: [
+          {
+            errorMessage: 'Username already in use',
+            method: function (fieldValue, field) {
+              console.log('remote validation', fieldValue, field);
+              return true;
+            },
+          }
+        ]
+      },
+      {
+        name: 'confirm_password',
+        rules: [
+          {
+            method: 'equalTo',
+            field: '#password'
+          }
+        ]
+      },
+      {
+        name: 'newsletter',
+        rules: [
+          {
+            method: function (fieldValue, field) {
+              console.log('remote validation', fieldValue, field);
+              let newsletter_topics = document.getElementById('newsletter_topics');
+              if (field.checked) {
+                newsletter_topics.removeAttribute('disabled')
+              } else {
+                newsletter_topics.setAttribute('disabled', '')
+              }
+              return true;
+            }
+          }
+        ]
+      },
+      {
+        name: 'topic',
+        rules: [
+          {
+            errorMessage: 'Please select at least two topics you\'d like to receive.',
+            method: function (fieldValue, field) {
+              console.log('remote validation', fieldValue, field);
+              let newsletter = document.querySelector('[name="newsletter"]');
+              if (newsletter.checked) {
+                let size = 0
+                let allCheckBox = document.querySelectorAll('[name="topic"]')
+                allCheckBox.forEach((checkbox) => {
+                  if (checkbox.checked) {
+                    size++;
+                  }
+                })
+                return size >= 2;
+              }
+              return true;
+            }
+          }
+        ]
+      },
+      {
+        name: 'topic2',
+        rules: [
+          {
+            errorMessage: 'Please select 1 or 2 topics',
+            method: 'rangelength',
+            min: 1,
+            max: 2
+          }
+        ]
+      },
+      {
+        name: 'minselect',
+        rules: [
+          {
+            errorMessage: 'Please select 2 elements.',
+            method: 'minlength',
+            min: 2
+          }
+        ]
+      },
+      {
+        name: 'maxfiles',
+        rules: [
+          {
+            errorMessage: 'Please select max 2 files.',
+            method: 'maxlength',
+            max: 2
+          }
+        ]
+      }
+    ],
+    submitHandler: function () {
+      console.log('remote action')
+    }
+  });
+</script>
+</body>
+</html>
